@@ -94,6 +94,7 @@ abbrev myParser := SimpleParser Substring Char
 
 def x : myParser Char := Parser.Char.char '8'
 def primes : myParser Char := Parser.first $ Parser.Char.char <$> ['2', '3', '5', '7']
+def primes' : myParser Char := Parser.Char.char '2' <|> Parser.Char.char '3' --, '5', '7']
 
 #eval Parser.run x '5'.toString
 #eval Parser.run x '8'.toString
@@ -103,6 +104,9 @@ def primes : myParser Char := Parser.first $ Parser.Char.char <$> ['2', '3', '5'
 #eval Parser.run primes "77"
 #eval Parser.run primes "58"
 #eval Parser.run primes "85"
+#eval Parser.run primes' "58"
+#eval Parser.run primes' "28"
+#eval Parser.run primes' "2"
 #eval Parser.run (Parser.Char.ASCII.parseFloat: myParser Float) "85"
 --#eval do
 --  let foo : Option Float := match (Parser.run (Parser.Char.ASCII.parseFloat: myParser Float) "85") with
@@ -114,6 +118,29 @@ def primes : myParser Char := Parser.first $ Parser.Char.char <$> ['2', '3', '5'
     | _ => none
   pure $ x + 10
 
+
+open Parser
+open Char
+
+def aaas :myParser (Array Char) := takeMany1 $ char 'a'
+
+def sample_half := "Jiangxi Copper Co. Ltd. Class H      34,000    47,899        0.00"
+
+def word : myParser (Array Char) := takeMany1 $ (Unicode.alpha <|> char '.')
+
+#eval Parser.run word "helloHI there"
+#eval Parser.run word "hi. there"
+#eval Parser.run (char 'a': myParser Char) "123 there"
+
+#eval Parser.run aaas "aaaa"
+#eval Parser.run aaas "aaab"
+#eval Parser.run aaas "aaba"
+#eval Parser.run aaas "baaa"
+
+-- So, each half of a line can either be:
+-- - blank
+-- - The name of a company
+-- - [Comapany name/stock class]   Holding    Market Value in GBP   % of total net assets
 
 def main : IO Unit :=
   IO.println s!"Hello, {hello}!"
