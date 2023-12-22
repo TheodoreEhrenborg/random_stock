@@ -119,28 +119,135 @@ def primes' : myParser Char := Parser.Char.char '2' <|> Parser.Char.char '3' --,
   pure $ x + 10
 
 
+
 open Parser
 open Char
 
 def aaas :myParser (Array Char) := takeMany1 $ char 'a'
-
-def sample_half := "Jiangxi Copper Co. Ltd. Class H      34,000    47,899        0.00"
-
-def word : myParser (Array Char) := takeMany1 $ (Unicode.alpha <|> char '.')
-
-#eval Parser.run word "helloHI there"
-#eval Parser.run word "hi. there"
-#eval Parser.run (char 'a': myParser Char) "123 there"
-
 #eval Parser.run aaas "aaaa"
 #eval Parser.run aaas "aaab"
 #eval Parser.run aaas "aaba"
 #eval Parser.run aaas "baaa"
 
+def sampleHalf := "Jiangxi Copper Co. Ltd. Class H      34,000    47,899        0.00"
+
+#eval Array.foldl String.push "" #['a', 'b', 'c']
+def word : myParser String := (Array.foldl String.push "") <$> (takeMany1 $ (Unicode.alpha <|> char '.'))
+
+#eval Parser.run word "helloHI there"
+#eval Parser.run word "hi. there"
+#eval Parser.run (char 'a': myParser Char) "123 there"
+#eval Parser.run word sampleHalf
+
+#eval "a" ++ "b"
+
+def smartConcat (a: String) (sep: String) (b:String) : String :=
+-- If a is empty, we don't want to use sep because
+-- it'll create a sep at the beginning of the array
+   match a with
+   | "" => b
+   | _ => a ++ sep ++ b
+
+#eval smartConcat "one" "two" " "
+#eval smartConcat "" "two" " "
+#eval Array.foldl (smartConcat . " " . ) "" #["1","2","","3","", "", "4"]
+
+def companyName : myParser String := (Array.foldl (smartConcat . " " . ) "") <$> (sepBy1 (char ' ') word)
+
+#eval Parser.run companyName sampleHalf
+
+def foo : myParser Nat := Unicode.digit
+
+#eval Parser.run foo "123"
+
+def doubleDigit : myParser Nat := do
+    let first <- Unicode.digit
+    let second <- Unicode.digit
+    pure $ 10*first + second
+
+def tripleDigit : myParser Nat := do
+    let first <- Unicode.digit
+    let second <- Unicode.digit
+    let third <- Unicode.digit
+    pure $ 100*first + 10*second + third
+
+#eval Parser.run tripleDigit "123"
+
+def singleDigit : myParser Nat := Unicode.digit
+
+def parseCommaNat : myParser Nat := do
+   let firstChunk <- first [tripleDigit , doubleDigit ,singleDigit ]
+   let tail <-  takeMany $ (char ',') *>  tripleDigit
+   pure $ Array.foldl (.*1000+.) 0 $ #[firstChunk] ++ tail
+
+def parseCommaNatOld : myParser Nat := (Array.foldl (.*1000+.) 0) <$> (sepBy1 (char ',') ASCII.parseNat)
+-- TODO This is not perfect
+-- It will incorrectly parse things like "1,23" as 1023 instead of rejecting them
+
+#eval Parser.run parseCommaNat "123,456"
+#eval Parser.run parseCommaNat "3,456"
+#eval Parser.run parseCommaNat "3,46"
+#eval Parser.run parseCommaNat "3"
+#eval Parser.run parseCommaNat "34"
+#eval Parser.run parseCommaNat "345"
+#eval Parser.run parseCommaNat "345,"
+#eval Parser.run parseCommaNat "123,46"
+#eval Parser.run parseCommaNat "123,46,987"
+#eval Parser.run parseCommaNat "123,456,987"
+#eval Parser.run parseCommaNat "123456,987"
+
+
+--#eval Parser.dropMany
+
+structure CompanyInfo where
+   name : String
+   holding : Nat
+   marketValueGBP : Nat
+   percentOfTotal : Float
+deriving Repr
+
+def spaces : myParser (Array Char) := takeMany1 $ char ' '
+
+def compInfo : myParser CompanyInfo := do
+   let name <- companyName
+   let _ <- spaces
+   let holding <- parseCommaNat
+   let _ <- spaces
+   let marketValue <- parseCommaNat
+   let _ <- spaces
+   let percent <- ASCII.parseFloat
+   pure { name := name , holding := holding, marketValueGBP := marketValue, percentOfTotal := percent : CompanyInfo}
+
+#eval Parser.run compInfo sampleHalf
+
 -- So, each half of a line can either be:
 -- - blank
 -- - The name of a company
 -- - [Comapany name/stock class]   Holding    Market Value in GBP   % of total net assets
+-- - We record the first two options as none
+
+def blankHalf : myParser (Option CompanyInfo) := char ' ' *> pure none
+def nameHalf : myParser (Option CompanyInfo) := companyName *> pure none
+def infoHalf : myParser (Option CompanyInfo) := compInfo
+
+#eval Parser.run infoHalf sampleHalf
+
+def lineHalf : myParser (Option CompanyInfo) := first [infoHalf, nameHalf, blankHalf]
+
+-- How about:
+-- Try to parse compInfo
+-- If fails, try to parse just the name
+-- If fails, just return none
+-- Then do two of these, interspersed with at least 0 spaces
+-- And then assert EOL
+
+def line : myParser (List (Option CompanyInfo)) := do
+  let first <- lineHalf
+  let _ <- spaces
+  let second <- lineHalf
+  pure [first, second]
+
+#eval Parser.run line "Dongfang Electric Corp. Ltd.     "
 
 def main : IO Unit :=
   IO.println s!"Hello, {hello}!"
