@@ -174,9 +174,7 @@ def companyName : myParser String := (Array.foldl (smartConcat . " " . ) "") <$>
 
 #eval Parser.run companyName sampleHalf
 
-def foo : myParser Nat := Unicode.digit
 
-#eval Parser.run foo "123"
 
 def doubleDigit : myParser Nat := do
     let first <- Unicode.digit
@@ -281,9 +279,6 @@ def getResult (a : Result (Error.Simple Substring Char) Substring (List (Option 
   match a with
     | Parser.Result.ok x y => none
     | Parser.Result.error x => some x
-
-def foo2 := do
-  IO.println $ { name := "foo" , holding := 1, marketValueGBP := 1, percentOfTotal := 1 : CompanyInfo}
 
 def main (input: List String)  : IO UInt32 :=
   match input with
