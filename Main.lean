@@ -273,25 +273,68 @@ def fullLine : myParser (List (Option CompanyInfo)) := do
 #eval Parser.run fullLine "China Conch Venture Holdings\n"
 #eval Parser.run fullLine "   Ltd.                              48,000   60,617        0.00          Angelalign Technology Inc.            4,800    47,506        0.00\n"
 
-#eval "4" ++ "\n"
+def getError (a : Result (Error.Simple Substring Char) Substring (List (Option CompanyInfo))) :=
+  match a with
+    | Parser.Result.error x => some x
+    | _ => none
 
 def getResult (a : Result (Error.Simple Substring Char) Substring (List (Option CompanyInfo))) :=
   match a with
-    | Parser.Result.ok x y => none
-    | Parser.Result.error x => some x
+    | Parser.Result.ok _ y => some y
+    | _ => none
 
-def main (input: List String)  : IO UInt32 :=
+def processLine (line: String):= getResult $ Parser.run fullLine (line++"\n")
+
+def filterOutNone : List (Option α) -> List α
+   | none::rest => filterOutNone rest
+   | some x ::rest => x :: filterOutNone rest
+   | [] => []
+
+#eval filterOutNone ([none, some 3, none, some 4] : List (Option Nat))
+#eval [none, some 3, none, some 4].filterMap id
+
+def flatten : List (List α) -> (List α)
+   | [] => []
+   | []::rest => flatten rest
+   | lyst::rest => lyst ++ flatten rest
+#eval flatten [[1,2,3], [4,5], [], [6]]
+
+partial def takeAtMost (n: Nat) (lyst: List α) : List α := match (n, lyst) with
+   | (_, []) => []
+   | (0, _) => []
+   | (n, head::rest) => head::takeAtMost (n-1) rest
+
+def main (input: List String)  : IO UInt32 := do
+    let initialData := processLine <$> input
+    let notErrorData := filterOutNone initialData
+    let rowsAreSplit := flatten notErrorData
+    let companyInfos := filterOutNone rowsAreSplit
+    let sorted := companyInfos.toArray.qsort (fun x y=> x.marketValueGBP > y.marketValueGBP)
+    IO.println s!"The total number of companies is {sorted.toList.length}"
+    -- TODO Are these actually the top 10 (American?) companies?
+    IO.println "The 10 biggest companies are"
+    IO.println $ sorted.toList.take 10
+    pure 0
+-- TODO Print the PDF's percentage and the calculated percentage to make sure they're very close
+
+#eval Array.qsort #[1, 2, 3, -10, -20] (. > .)
+#eval #[1, 2, 3, -10, -20].qsort (. > .)
+
+def lookForErrors (input: List String)  : IO UInt32 :=
   match input with
   | [] => pure 0
   | head :: rest => do
-     let x := getResult ( Parser.run fullLine (head++"\n"))
+     let x := getError ( Parser.run fullLine (head++"\n"))
      match x with
      | none => pure ()
      | some y => IO.println x
                  IO.println head
-     main rest
+     lookForErrors rest
 
 -- The data I want starts on line 9259 and ends on line 14546
+-- That's a difference of 5287, so I want 5288 lines
+-- Hence I run the command
+-- lake exe random_stock ( head -n 14546 ~/vanguard_playground/oeic-interim-long-report.txt | tail -n 5288)
 
 -- TODO Flaws:
 -- Some entries are "-" (or some other dash), I guess because the company is worthless?
