@@ -132,7 +132,22 @@ def aaas :myParser (Array Char) := takeMany1 $ char 'a'
 def sampleHalf := "Jiangxi Copper Co. Ltd. Class H      34,000    47,899        0.00"
 
 #eval Array.foldl String.push "" #['a', 'b', 'c']
-def word : myParser String := (Array.foldl String.push "") <$> (takeMany1 $ (Unicode.alpha <|> char '.'))
+def digitCharParser : myParser Char := Nat.digitChar <$> Unicode.digit
+
+def word : myParser String := (Array.foldl String.push "") <$>
+    (takeMany1 $ (
+    Unicode.alpha
+    <|> digitCharParser
+    <|> char '-'
+    <|> char '&'
+    <|> char '.'
+    <|> char '\''
+    <|> char '/'
+    <|> char '('
+    <|> char ')'
+    <|> char '?'
+    <|> char '%'
+    ))
 
 #eval Parser.run word "helloHI there"
 #eval Parser.run word "hi. there"
@@ -206,6 +221,9 @@ structure CompanyInfo where
    percentOfTotal : Float
 deriving Repr
 
+instance : ToString CompanyInfo where
+  toString c :=  s!"{c.name} Holding {c.holding} Market value (GBP) {c.marketValueGBP} Percent of total {c.percentOfTotal}"
+
 def spaces : myParser (Array Char) := takeMany1 $ char ' '
 
 def compInfo : myParser CompanyInfo := do
@@ -254,7 +272,25 @@ def fullLine : myParser (List (Option CompanyInfo)) := do
 #eval Parser.run fullLine "China Conch Venture Holdings\n"
 #eval Parser.run fullLine "   Ltd.                              48,000   60,617        0.00          Angelalign Technology Inc.            4,800    47,506        0.00\n"
 
+#eval "4" ++ "\n"
 
-def main (input: List String)  : IO UInt32 := do
-  IO.println s!"{input}!"
-  pure 0
+def getResult (a : Result (Error.Simple Substring Char) Substring (List (Option CompanyInfo))) :=
+  match a with
+    | Parser.Result.ok x y => none
+    | Parser.Result.error x => some x
+
+def foo2 := do
+  IO.println $ { name := "foo" , holding := 1, marketValueGBP := 1, percentOfTotal := 1 : CompanyInfo}
+
+def main (input: List String)  : IO UInt32 :=
+  match input with
+  | [] => pure 0
+  | head :: rest => do
+     let x := getResult ( Parser.run fullLine (head++"\n"))
+     match x with
+     | none => pure ()
+     | some y => IO.println x
+                 IO.println head
+     main rest
+
+-- The data I want starts on line 9259 and ends on line 14546
