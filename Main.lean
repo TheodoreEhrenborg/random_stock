@@ -147,6 +147,9 @@ def word : myParser String := (Array.foldl String.push "") <$>
     <|> char ')'
     <|> char '?'
     <|> char '%'
+    <|> char ':'
+    <|> char '+'
+    <|> char '!'
     ))
 
 #eval Parser.run word "helloHI there"
@@ -294,3 +297,9 @@ def main (input: List String)  : IO UInt32 :=
      main rest
 
 -- The data I want starts on line 9259 and ends on line 14546
+
+-- TODO Flaws:
+-- Some entries are "-" (or some other dash), I guess because the company is worthless?
+-- But then the company in the other column can't be parsed either
+-- Similarly, each country has a row with total holdings, and that row makes its sibling
+-- column unparseable
