@@ -226,13 +226,12 @@ def compInfo : myParser CompanyInfo := do
 -- - [Comapany name/stock class]   Holding    Market Value in GBP   % of total net assets
 -- - We record the first two options as none
 
-def blankHalf : myParser (Option CompanyInfo) := char ' ' *> pure none
 def nameHalf : myParser (Option CompanyInfo) := companyName *> pure none
-def infoHalf : myParser (Option CompanyInfo) := compInfo
 
-#eval Parser.run infoHalf sampleHalf
 
-def lineHalf : myParser (Option CompanyInfo) := first [infoHalf, nameHalf, blankHalf]
+def lineHalf : myParser (Option CompanyInfo) := optionD none (first [compInfo, nameHalf]) <* (takeMany $ char ' ')
+
+#eval Parser.run lineHalf sampleHalf
 
 -- How about:
 -- Try to parse compInfo
@@ -241,13 +240,21 @@ def lineHalf : myParser (Option CompanyInfo) := first [infoHalf, nameHalf, blank
 -- Then do two of these, interspersed with at least 0 spaces
 -- And then assert EOL
 
-def line : myParser (List (Option CompanyInfo)) := do
+def fullLine : myParser (List (Option CompanyInfo)) := do
+  let _ <- takeMany $ char ' '
   let first <- lineHalf
-  let _ <- spaces
   let second <- lineHalf
+  let _ <- eol
   pure [first, second]
 
-#eval Parser.run line "Dongfang Electric Corp. Ltd.     "
+#eval "foo"
+#eval Parser.run fullLine "Dongfang Electric Corp. Ltd.     \n"
+#eval Parser.run fullLine "                                                                          China Hongqiao Group Ltd.            61,500    47,871        0.00\n"
+#eval Parser.run fullLine "   Class H                           55,000   61,764        0.00\n"
+#eval Parser.run fullLine "China Conch Venture Holdings\n"
+#eval Parser.run fullLine "   Ltd.                              48,000   60,617        0.00          Angelalign Technology Inc.            4,800    47,506        0.00\n"
 
-def main : IO Unit :=
-  IO.println s!"Hello, {hello}!"
+
+def main (input: List String)  : IO UInt32 := do
+  IO.println s!"{input}!"
+  pure 0
