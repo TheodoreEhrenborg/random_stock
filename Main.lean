@@ -1,6 +1,6 @@
 import «RandomStock»
 import Parser
-
+import LSpec
 
 /-
 Copyright © 2022-2023 François G. Dorais, Kyrill Serdyuk, Emma Shroyer. All rights reserved.
@@ -367,3 +367,5 @@ def lookForErrors (input: List String)  : IO UInt32 :=
 #eval (randNat (mkStdGen 1) 1 10).1
 #eval (randNat (mkStdGen 1) 1 10).1
 #eval 123456781234567812345678999123456789. / 3543525345345345353535353435
+
+#lspec LSpec.test "four equals four" (4 = 4)

@@ -2,6 +2,7 @@ import Lake
 open Lake DSL
 
 require Parser from git "https://github.com/fgdorais/lean4-parser" @ "main"
+require LSpec from git "https://github.com/lurk-lab/LSpec" @ "main"
 
 package «random_stock» where
   -- add package configuration options here
@@ -16,3 +17,5 @@ lean_exe «random_stock» where
   -- `runFrontend`) at the expense of increased binary size on Linux.
   -- Remove this line if you do not need such functionality.
   supportInterpreter := true
+
+lean_exe Tests.Tests
