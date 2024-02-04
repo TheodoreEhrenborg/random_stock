@@ -304,19 +304,41 @@ partial def takeAtMost (n: Nat) (lyst: List α) : List α := match (n, lyst) wit
    | (0, _) => []
    | (n, head::rest) => head::takeAtMost (n-1) rest
 
+def observedPercentage (c: CompanyInfo) (total: Nat) : Float :=
+    100.0 * c.marketValueGBP.toFloat / total.toFloat
+
+def cryptoRandLessThan (n : Nat) : IO (Option Nat) := do
+    let command := { cmd := "python" , args := #["-c" ,
+        s!"import secrets; print(secrets.randbelow({n}))"] : IO.Process.SpawnArgs }
+    let result <- IO.Process.run command
+    pure $ (result.stripSuffix "\n").toNat?
+
+#eval "344".stripSuffix "4"
+
+#eval cryptoRandLessThan 100
+
 def main (input: List String)  : IO UInt32 := do
-    let initialData := processLine <$> input
-    let notErrorData := filterOutNone initialData
-    let rowsAreSplit := flatten notErrorData
-    let companyInfos := filterOutNone rowsAreSplit
+    IO.println $ s!"{<-(cryptoRandLessThan 1000)}"
+    IO.println $ s!"{<-(cryptoRandLessThan 1000)}"
+    pure 0
+
+def main2 (input: List String)  : IO UInt32 := do
+    let initialData : List (Option (List (Option CompanyInfo))) := processLine <$> input
+    let notErrorData: List (List (Option CompanyInfo)) := filterOutNone initialData
+    -- A row containing two entries now becomes two separate entries in the list
+    let rowsAreSplit : List (Option CompanyInfo) := flatten notErrorData
+    let companyInfos : List CompanyInfo := filterOutNone rowsAreSplit
     let sorted := companyInfos.toArray.qsort (fun x y=> x.marketValueGBP > y.marketValueGBP)
     IO.println s!"The total number of companies is {sorted.toList.length}"
     -- TODO Are these actually the top 10 (American?) companies?
+    let totalGBP := List.foldr (fun company soFar => company.marketValueGBP + soFar) 0 companyInfos
+    IO.println s!"The total worth of all companies is {totalGBP} GBP"
     IO.println "The 10 biggest companies are"
-    IO.println $ sorted.toList.take 10
+    IO.println $ (fun c => (c, observedPercentage c totalGBP)) <$> sorted.toList.take 10
     pure 0
 -- TODO Print the PDF's percentage and the calculated percentage to make sure they're very close
 
+#eval IO.println "h\ti"
 #eval Array.qsort #[1, 2, 3, -10, -20] (. > .)
 #eval #[1, 2, 3, -10, -20].qsort (. > .)
 
@@ -341,3 +363,7 @@ def lookForErrors (input: List String)  : IO UInt32 :=
 -- But then the company in the other column can't be parsed either
 -- Similarly, each country has a row with total holdings, and that row makes its sibling
 -- column unparseable
+
+#eval (randNat (mkStdGen 1) 1 10).1
+#eval (randNat (mkStdGen 1) 1 10).1
+#eval 123456781234567812345678999123456789. / 3543525345345345353535353435
