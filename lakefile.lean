@@ -19,3 +19,4 @@ lean_exe «random_stock» where
   supportInterpreter := true
 
 lean_exe Tests.Tests
+lean_exe Tests.Tests1
