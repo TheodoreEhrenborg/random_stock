@@ -14,9 +14,9 @@ pdftotext -layout data/oeic-interim-long-report.pdf
 The data isn't in a consistent format; there are sometimes two companies per line.
 So we use a parser combinator to correctly read the values.
 
-The relevant data starts on line 9259 and ends on line 14546
-That's a difference of 5287, so we want 5288 lines
-Hence run the command
+The relevant data starts on line 9259 and ends on line 14546.
+That's a difference of 5287, so we want 5288 lines.
+Hence run the command:
 
 ```bash
 lake exe random_stock $( head -n 14546 data/oeic-interim-long-report.txt | tail -n 5288)
