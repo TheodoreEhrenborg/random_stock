@@ -3,13 +3,19 @@
 ## Motivation
 
 ## Commands
+
+``` bash
 pdftotext -layout data/oeic-interim-long-report.pdf
+```
 
 
 The data I want starts on line 9259 and ends on line 14546
 That's a difference of 5287, so I want 5288 lines
 Hence I run the command
-lake exe random_stock ( head -n 14546 ~/vanguard_playground/oeic-interim-long-report.txt | tail -n 5288)
+
+``` bash
+lake exe random_stock $( head -n 14546 data/oeic-interim-long-report.txt | tail -n 5288)
+```
 
 ## Tests
 
